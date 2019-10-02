@@ -50,7 +50,7 @@ def read_lines(file, mode ='b', encoding ='utf-8', limit=None):
                 line = line.decode(encoding)
             yield line.replace('\n','')
 
-def read_jsonsl(file, mode="b",limit=None):
+def read_jsonl(file, mode="b",limit=None):
     assert any([mode==m for m in ['b','t']])
     with gzip.open(file, mode='r'+mode) if file.endswith('.gz') else open(file, mode="rb") as f:
         counter=0
