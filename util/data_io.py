@@ -7,7 +7,7 @@ def write_jsonl(file:str,data:Iterable[Dict], mode="wb"):
     def process_line(d:Dict):
         line = json.dumps(d, skipkeys=True, ensure_ascii=False)
         line = line + "\n"
-        if mode=='b':
+        if 'b' in mode:
             line = line.encode('utf-8')
         return line
     with gzip.open(file, mode=mode) if file.endswith('gz') else open(file, mode=mode) as f:
@@ -16,7 +16,8 @@ def write_jsonl(file:str,data:Iterable[Dict], mode="wb"):
 def write_json(file:str,datum:Dict,mode="wb"):
     with gzip.open(file, mode=mode) if file.endswith('gz') else open(file, mode=mode) as f:
         line = json.dumps(datum,skipkeys=True, ensure_ascii=False)
-        line = line.encode('utf-8')
+        if 'b' in mode:
+            line = line.encode('utf-8')
         f.write(line)
 
 def write_lines(file,lines:Iterable[str], mode='wb'):
@@ -42,7 +43,7 @@ def read_lines(file, mode ='b', encoding ='utf-8', limit=None):
             counter+=1
             if limit and (counter>limit):
                 break
-            if mode == 'b':
+            if 'b' in mode:
                 line = line.decode(encoding)
             yield line.replace('\n','')
 
