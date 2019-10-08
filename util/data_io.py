@@ -3,18 +3,18 @@ import json
 from typing import Dict, List, Iterable
 import os
 
-def write_jsonl(file:str,data:Iterable[Dict], mode="b"):
+def write_jsonl(file:str,data:Iterable[Dict], mode="wb"):
     def process_line(d:Dict):
         line = json.dumps(d, skipkeys=True, ensure_ascii=False)
         line = line + "\n"
         if mode=='b':
             line = line.encode('utf-8')
         return line
-    with gzip.open(file, mode='w'+mode) if file.endswith('gz') else open(file, mode='w'+mode) as f:
+    with gzip.open(file, mode=mode) if file.endswith('gz') else open(file, mode=mode) as f:
         f.writelines((process_line(d) for d in data))
 
-def write_json(file:str,datum:Dict,mode="b"):
-    with gzip.open(file, mode='w'+mode) if file.endswith('gz') else open(file, mode='w'+mode) as f:
+def write_json(file:str,datum:Dict,mode="wb"):
+    with gzip.open(file, mode=mode) if file.endswith('gz') else open(file, mode=mode) as f:
         line = json.dumps(datum,skipkeys=True, ensure_ascii=False)
         line = line.encode('utf-8')
         f.write(line)
