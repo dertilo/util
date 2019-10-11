@@ -29,10 +29,8 @@ def write_lines(file,lines:Iterable[str], mode='wb'):
 
 def read_lines_from_files(path:str, mode ='b', encoding ='utf-8', limit=None):
     g = (line for file in os.listdir(path) for line in read_lines(os.path.join(path,file),mode,encoding))
-    c=0
-    for line in g:
-        c+=1
-        if limit and (c>limit):break
+    for c,line in enumerate(g):
+        if limit and (c>=limit):break
         yield line
 
 def read_lines(file, mode ='b', encoding ='utf-8', limit=None):
@@ -52,7 +50,7 @@ def read_jsonl(file, mode="b",limit=None,num_to_skip=0):
     with gzip.open(file, mode='r'+mode) if file.endswith('.gz') else open(file, mode="rb") as f:
         [next(f) for _ in range(num_to_skip)]
         for k,line in enumerate(f):
-            if limit and (k > limit): break
+            if limit and (k >= limit): break
             yield json.loads(line.decode('utf-8') if mode=='b' else line)
 
 def read_json(file:str,mode="b"):
