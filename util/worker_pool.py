@@ -2,7 +2,7 @@ import time
 import traceback
 from abc import abstractmethod
 from pprint import pprint
-from typing import Iterable
+from typing import Iterable, NamedTuple, Any
 from torch import multiprocessing
 multiprocessing.set_start_method('spawn', force=True)  # needs to be done to get CUDA working
 # multiprocessing = None
@@ -51,7 +51,15 @@ class Worker(multiprocessing.Process):
                     result = None
 
                 self.task_queue.task_done()
-                self.result_queue.put(result)
+                if isinstance(task_data,IdWork):
+                    putit = (task_data.eid,result)
+                else:
+                    putit = result
+                self.result_queue.put(putit)
+
+class IdWork(NamedTuple):
+    eid:int
+    work:Any
 
 class WorkerPool(object):
 
@@ -87,6 +95,11 @@ class WorkerPool(object):
 
         for i in range(self.n_jobs):
             yield self.results_queue.get()
+
+    def process(self,data):
+        eided_data = [IdWork(id(d),d) for d in data]
+        id2result = {task_id:r for task_id,r in self.process_unordered(eided_data)}
+        return [id2result[e.eid] for e in eided_data]
 
 #######################################################################################################
 def funfun(x):
