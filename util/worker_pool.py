@@ -39,7 +39,12 @@ class Worker(multiprocessing.Process):
         proc_name = self.name
         with self.task as task:
             while True:
-                task_data = self.task_queue.get()
+                stuff = self.task_queue.get()
+                if isinstance(stuff,IdWork):
+                    work_id, task_data = stuff.eid,stuff.work
+                else:
+                    work_id, task_data = None,stuff
+
                 if task_data is None:
                     # Poison pill means shutdown
                     self.task_queue.task_done()
@@ -51,8 +56,8 @@ class Worker(multiprocessing.Process):
                     result = None
 
                 self.task_queue.task_done()
-                if isinstance(task_data,IdWork):
-                    putit = (task_data.eid,result)
+                if work_id is not None:
+                    putit = (work_id,result)
                 else:
                     putit = result
                 self.result_queue.put(putit)
