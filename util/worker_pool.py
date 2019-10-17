@@ -102,13 +102,14 @@ class WorkerPool(object):
             yield self.results_queue.get()
 
     def process(self,data):
-        eided_data = [IdWork(id(d),d) for d in data]
+        eided_data = [IdWork(k,d) for k,d in enumerate(data)]
+        assert len(set(w.eid for w in eided_data)) == len(data)
         id2result = {task_id:r for task_id,r in self.process_unordered(eided_data)}
         return [id2result[e.eid] for e in eided_data]
 
 #######################################################################################################
 def funfun(x):
-    time.sleep(0.5)
+    # time.sleep(0.5)
     s = 'non-daemon-process: %s: %s' % (str(multiprocessing.current_process()), x)
     return s
 
@@ -123,19 +124,21 @@ class MinimalTask(Task):
         return self
 
     def __call__(self, data):
+        eid,datum = data
+        time.sleep(datum)
         with multiprocessing.Pool(processes=3) as p:
             result = list(
-                p.imap_unordered(funfun, [data + '-%s-subtask-%d' % (self.params_that_where_pickled, k) for k in range(9)]))
+                p.imap_unordered(funfun, ['task-%d-%s-subtask-%d' % (eid,self.params_that_where_pickled, k) for k in range(9)]))
         return {'worker-name': self.variable_that_is_never_pickled, 'results': result}
 
 
 if __name__ == '__main__':
 
-    data = ['task-%d'%x for x in range(3)]
+    data = [(x,3-x) for x in range(3)]
     with WorkerPool(processes=2,
                     task = MinimalTask('some-param'),
                     daemons=False) as p:
-        x = list(p.process_unordered(data))
+        x = p.process(data)
     print(len(x))
     pprint(x)
     assert len(x) == len(data)
