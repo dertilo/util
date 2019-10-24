@@ -6,7 +6,7 @@ with open('requirements.txt') as f:
 setup(
     name='util',
     version='0.1',
-    packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
+    packages=find_packages(include=["util","mlutil"]),
     license='LICENSE.txt',
     long_description=open('README.md').read(),
     install_requires=reqs.strip().split('\n'),
