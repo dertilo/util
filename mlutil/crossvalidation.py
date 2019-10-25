@@ -87,7 +87,7 @@ class ScoreTask(Task):
 
 if __name__ == "__main__":
 
-    task = ScoreTask(dummy_score_fun, kwargs_builder, {'param':"testparam"})
+    task = ScoreTask(dummy_score_fun, kwargs_builder, {"param": "testparam"})
     scores = calc_scores(
         task, scoring_jobs=[("train_%k", "test_%k") for k in range(3)], n_jobs=2
     )
