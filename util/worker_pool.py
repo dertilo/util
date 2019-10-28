@@ -3,12 +3,17 @@ import traceback
 from abc import abstractmethod
 from pprint import pprint
 from typing import Iterable, NamedTuple, Any
-from torch import multiprocessing
 
-multiprocessing.set_start_method(
-    "spawn", force=True
-)  # needs to be done to get CUDA working
-# multiprocessing = None
+try:
+    from torch import multiprocessing
+
+    multiprocessing.set_start_method(
+        "spawn", force=True
+    )  # needs to be done to get CUDA working
+    # multiprocessing = None
+
+except ImportError:  #TODO: this is shitty
+    import multiprocessing
 
 
 class Task(object):
