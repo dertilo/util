@@ -94,17 +94,30 @@ def download_data(base_url, file_name, data_folder, verbose=False, unzip_it=Fals
     url = base_url + "/" + file_name
     file = data_folder + "/" + file_name
 
-    if not os.path.isfile(file):
-        os.system(
-            "wget -c -N%s -P %s %s" % (" -q" if not verbose else "", data_folder, url)
-        )
 
-        if unzip_it:
-            if file_name.endswith(".zip"):
-                os.system("unzip -d %s %s" % (data_folder, file))
+    if unzip_it:
+        if file_name.endswith(".zip"):
+            extract_folder = file.replace('.zip', '')
+            if not os.path.isdir(extract_folder):
+                wget_file(url, data_folder, verbose)
+                os.system('mkdir %s'%extract_folder)
+                os.system("unzip -d %s %s" % (extract_folder, file))
                 os.remove(file)
-            elif file_name.endswith(".tar.gz"):
-                os.system("tar xvzf %s -C %s" % (file, data_folder))
+        elif file_name.endswith(".tar.gz"):
+            extract_folder = file.replace('.tar.gz', '')
+            if not os.path.isdir(extract_folder):
+                wget_file(url, data_folder, verbose)
+                os.system('mkdir %s'%extract_folder)
+                os.system("tar xzf %s -C %s" % (file, extract_folder))
                 os.remove(file)
+    else:
+        if not os.path.isfile(file):
+            wget_file(url, data_folder, verbose)
 
         print("successfully downloaded %s" % file_name)
+
+
+def wget_file(url, data_folder, verbose):
+    os.system(
+        "wget -c -N%s -P %s %s" % (" -q" if not verbose else "", data_folder, url)
+    )
