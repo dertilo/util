@@ -93,7 +93,7 @@ def read_json(file: str, mode="b"):
         return json.loads(s)
 
 
-def download_data(base_url, file_name, data_folder, verbose=False, unzip_it=False):
+def download_data(base_url, file_name, data_folder, verbose=False, unzip_it=False,do_raise=True):
     if not os.path.exists(data_folder):
         os.makedirs(data_folder, exist_ok=True)
 
@@ -101,29 +101,31 @@ def download_data(base_url, file_name, data_folder, verbose=False, unzip_it=Fals
     file = data_folder + "/" + file_name
 
 
-    if unzip_it:
-        if file_name.endswith(".zip"):
-            extract_folder = file.replace('.zip', '')
-            if not os.path.isdir(extract_folder):
+    try:
+        if unzip_it:
+            if file_name.endswith(".zip"):
+                extract_folder = file.replace('.zip', '')
+                if not os.path.isdir(extract_folder):
+                    wget_file(url, data_folder, verbose)
+                    os.system('mkdir %s' % extract_folder)
+                    os.system("unzip -d %s %s" % (extract_folder, file))
+                    os.remove(file)
+            elif file_name.endswith(".tar.gz"):
+                extract_folder = file.replace('.tar.gz', '')
+                if not os.path.isdir(extract_folder):
+                    wget_file(url, data_folder, verbose)
+                    os.system('mkdir %s' % extract_folder)
+                    os.system("tar xzf %s -C %s" % (file, extract_folder))
+                    os.remove(file)
+        else:
+            if not os.path.isfile(file):
                 wget_file(url, data_folder, verbose)
-                os.system('mkdir %s'%extract_folder)
-                os.system("unzip -d %s %s" % (extract_folder, file))
-                os.remove(file)
-        elif file_name.endswith(".tar.gz"):
-            extract_folder = file.replace('.tar.gz', '')
-            if not os.path.isdir(extract_folder):
-                wget_file(url, data_folder, verbose)
-                os.system('mkdir %s'%extract_folder)
-                os.system("tar xzf %s -C %s" % (file, extract_folder))
-                os.remove(file)
-    else:
-        if not os.path.isfile(file):
-            wget_file(url, data_folder, verbose)
-
-        print("successfully downloaded %s" % file_name)
-
+    except FileNotFoundError as e:
+        if do_raise:
+            raise e
 
 def wget_file(url, data_folder, verbose):
-    os.system(
-        "wget -c -N%s -P %s %s" % (" -q" if not verbose else "", data_folder, url)
-    )
+    err_code = os.system(
+        "wget -c -N%s -P %s %s" % (" -q" if not verbose else "", data_folder, url))
+    if err_code!=0:
+        raise FileNotFoundError("could not downloaded %s" % url.split('/')[-1])
