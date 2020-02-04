@@ -27,6 +27,12 @@ def write_json(file: str, datum: Dict, mode="wb"):
             line = line.encode("utf-8")
         f.write(line)
 
+def write_file(file, s: str, mode="wb"):
+    with gzip.open(file, mode=mode) if file.endswith(".gz") else open(
+        file, mode=mode
+    ) as f:
+        f.write(s.encode("utf-8"))
+
 
 def write_lines(file, lines: Iterable[str], mode="wb"):
     def process_line(line):
