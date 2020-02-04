@@ -103,20 +103,22 @@ def download_data(base_url, file_name, data_folder, verbose=False, unzip_it=Fals
 
     try:
         if unzip_it:
-            if file_name.endswith(".zip"):
+            if any(file_name.endswith(suf) for suf in [".zip",'.ZIP']):
                 extract_folder = file.replace('.zip', '')
                 if not os.path.isdir(extract_folder):
                     wget_file(url, data_folder, verbose)
                     os.system('mkdir %s' % extract_folder)
                     os.system("unzip -d %s %s" % (extract_folder, file))
                     os.remove(file)
-            elif file_name.endswith(".tar.gz"):
+            elif any(file_name.endswith(suf) for suf in [".tar.gz",'.tgz']):
                 extract_folder = file.replace('.tar.gz', '')
                 if not os.path.isdir(extract_folder):
                     wget_file(url, data_folder, verbose)
                     os.system('mkdir %s' % extract_folder)
                     os.system("tar xzf %s -C %s" % (file, extract_folder))
                     os.remove(file)
+            else:
+                raise NotImplementedError
         else:
             if not os.path.isfile(file):
                 wget_file(url, data_folder, verbose)
