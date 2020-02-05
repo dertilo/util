@@ -113,8 +113,8 @@ def download_data(
                 )
                 if not os.path.isdir(extract_folder):
                     wget_file(url, data_folder, verbose)
-                    os.system("mkdir %s" % extract_folder)
-                    os.system("unzip -d %s %s" % (extract_folder, file))
+                    assert os.system("mkdir %s" % extract_folder)==0
+                    assert os.system("unzip -d %s %s" % (extract_folder, file))==0
                     os.remove(file)
             elif any(file_name.endswith(suf) for suf in [".tar.gz", ".tgz"]):
                 extract_folder = (
@@ -124,8 +124,8 @@ def download_data(
                 )
                 if not os.path.isdir(extract_folder):
                     wget_file(url, data_folder, verbose)
-                    os.system("mkdir %s" % extract_folder)
-                    os.system("tar xzf %s -C %s" % (file, extract_folder))
+                    assert os.system("mkdir %s" % extract_folder)==0
+                    assert os.system("tar xzf %s -C %s" % (file, extract_folder))==0
                     os.remove(file)
             else:
                 raise NotImplementedError
