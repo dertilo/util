@@ -127,6 +127,18 @@ def download_data(
                     assert os.system("mkdir %s" % extract_folder)==0
                     assert os.system("tar xzf %s -C %s" % (file, extract_folder))==0
                     os.remove(file)
+
+            elif any(file_name.endswith(suf) for suf in [".gz", ".GZ"]):
+                extract_folder = (
+                    file.replace(".gz", "")
+                    if file.endswith(".gz")
+                    else file.replace(".GZ", "")
+                )
+                if not os.path.isdir(extract_folder):
+                    wget_file(url, data_folder, verbose)
+                    assert os.system("mkdir %s" % extract_folder)==0
+                    assert os.system("gzip -dc %s %s" % (file, extract_folder))==0
+                    os.remove(file)
             else:
                 raise NotImplementedError
         else:
