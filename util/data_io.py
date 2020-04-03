@@ -1,6 +1,7 @@
 import gzip
 import json
 import re
+from functools import partial
 from typing import Dict, List, Iterable
 import os
 
@@ -128,11 +129,9 @@ def download_data(
     url = base_url + "/" + file_name
     file = data_folder + "/" + file_name
 
-    def build_extract_with_os_command_method(build_command):
-        def extract(extract_folder, file):
-            assert os.system(build_command(extract_folder, file)) == 0
+    def extract(extract_folder, file,build_command):
+        assert os.system(build_command(extract_folder, file)) == 0
 
-        return extract
 
     try:
         if unzip_it:
@@ -150,7 +149,7 @@ def download_data(
                 raise NotImplementedError
 
             download_and_extract(
-                build_extract_with_os_command_method(build_command),
+                partial(extract,build_command=build_command),
                 data_folder,
                 extract_folder,
                 file,
@@ -179,4 +178,4 @@ def wget_file(url, data_folder, verbose=False):
 if __name__ == "__main__":
     file_name = "/test-other.tar.gz"
     base_url = "http://www.openslr.org/resources/12"
-    download_data(base_url, file_name, "/tmp/test_data", verbose=True)
+    download_data(base_url, file_name, "/tmp/test_data", unzip_it=True,verbose=True)
