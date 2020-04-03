@@ -1,5 +1,6 @@
 import gzip
 import json
+import re
 from typing import Dict, List, Iterable
 import os
 
@@ -94,8 +95,32 @@ def read_json(file: str, mode="b"):
         return json.loads(s)
 
 
+def download_and_extract(
+    extract_method,
+    data_folder,
+    extract_folder,
+    file,
+    remove_zipped,
+    url,
+    verbose,
+    overwrite=False,
+):
+    if not os.path.isdir(extract_folder) or overwrite:
+        wget_file(url, data_folder, verbose)
+        assert os.system("mkdir %s" % extract_folder) == 0
+        extract_method(extract_folder, file)
+        if remove_zipped:
+            os.remove(file)
+
+
 def download_data(
-    base_url, file_name, data_folder, verbose=False, unzip_it=False, do_raise=True
+    base_url,
+    file_name,
+    data_folder,
+    verbose=False,
+    unzip_it=False,
+    do_raise=True,
+    remove_zipped=False,
 ):
     if not os.path.exists(data_folder):
         os.makedirs(data_folder, exist_ok=True)
@@ -103,44 +128,37 @@ def download_data(
     url = base_url + "/" + file_name
     file = data_folder + "/" + file_name
 
+    def build_extract_with_os_command_method(build_command):
+        def extract(extract_folder, file):
+            assert os.system(build_command(extract_folder, file)) == 0
+
+        return extract
+
     try:
         if unzip_it:
-            if any(file_name.endswith(suf) for suf in [".zip", ".ZIP"]):
-                extract_folder = (
-                    file.replace(".zip", "")
-                    if file.endswith(".zip")
-                    else file.replace(".ZIP", "")
-                )
-                if not os.path.isdir(extract_folder):
-                    wget_file(url, data_folder, verbose)
-                    assert os.system("mkdir %s" % extract_folder)==0
-                    assert os.system("unzip -d %s %s" % (extract_folder, file))==0
-                    os.remove(file)
-            elif any(file_name.endswith(suf) for suf in [".tar.gz", ".tgz"]):
-                extract_folder = (
-                    file.replace(".tar.gz", "")
-                    if file.endswith(".tar.gz")
-                    else file.replace(".tgz", "")
-                )
-                if not os.path.isdir(extract_folder):
-                    wget_file(url, data_folder, verbose)
-                    assert os.system("mkdir %s" % extract_folder)==0
-                    assert os.system("tar xzf %s -C %s" % (file, extract_folder))==0
-                    os.remove(file)
+            suffixes = [".zip", ".ZIP", ".tar.gz", ".tgz", ".gz", ".GZ"]
+            regex = r"|".join(["(?:%s)" % s for s in suffixes])
+            extract_folder = re.sub(regex, "", file)
 
-            elif any(file_name.endswith(suf) for suf in [".gz", ".GZ"]):
-                extract_folder = (
-                    file.replace(".gz", "")
-                    if file.endswith(".gz")
-                    else file.replace(".GZ", "")
-                )
-                if not os.path.isdir(extract_folder):
-                    wget_file(url, data_folder, verbose)
-                    assert os.system("mkdir %s" % extract_folder)==0
-                    assert os.system("gzip -dc %s %s" % (file, extract_folder))==0
-                    os.remove(file)
+            if any(file.endswith(suf) for suf in [".zip", ".ZIP"]):
+                build_command = lambda dir, file: "unzip -d %s %s" % (dir, file,)
+            elif any(file.endswith(suf) for suf in [".tar.gz", ".tgz"]):
+                build_command = lambda dir, file: "tar xzf %s -C %s" % (file, dir)
+            elif any(file.endswith(suf) for suf in [".gz", ".GZ"]):
+                build_command = lambda dir, file: "gzip -dc %s %s" % (file, dir)
             else:
                 raise NotImplementedError
+
+            download_and_extract(
+                build_extract_with_os_command_method(build_command),
+                data_folder,
+                extract_folder,
+                file,
+                remove_zipped,
+                url,
+                verbose,
+            )
+
         else:
             if not os.path.isfile(file):
                 wget_file(url, data_folder, verbose)
@@ -149,9 +167,16 @@ def download_data(
             raise e
 
 
-def wget_file(url, data_folder, verbose):
+def wget_file(url, data_folder, verbose=False):
+    # TODO(tilo): use wget.download(url, split_dir)
     err_code = os.system(
         "wget -c -N%s -P %s %s" % (" -q" if not verbose else "", data_folder, url)
     )
     if err_code != 0:
         raise FileNotFoundError("could not downloaded %s" % url.split("/")[-1])
+
+
+if __name__ == "__main__":
+    file_name = "/test-other.tar.gz"
+    base_url = "http://www.openslr.org/resources/12"
+    download_data(base_url, file_name, "/tmp/test_data", verbose=True)
