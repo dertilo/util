@@ -96,24 +96,6 @@ def read_json(file: str, mode="b"):
         return json.loads(s)
 
 
-def download_and_extract(
-    extract_method,
-    data_folder,
-    extract_folder,
-    file,
-    remove_zipped,
-    url,
-    verbose,
-    overwrite=False,
-):
-    if not os.path.isdir(extract_folder) or overwrite:
-        wget_file(url, data_folder, verbose)
-        assert os.system("mkdir %s" % extract_folder) == 0
-        extract_method(extract_folder, file)
-        if remove_zipped:
-            os.remove(file)
-
-
 def download_data(
     base_url,
     file_name,
@@ -129,9 +111,8 @@ def download_data(
     url = base_url + "/" + file_name
     file = data_folder + "/" + file_name
 
-    def extract(extract_folder, file,build_command):
+    def extract(extract_folder, file, build_command):
         assert os.system(build_command(extract_folder, file)) == 0
-
 
     try:
         if unzip_it:
@@ -148,15 +129,12 @@ def download_data(
             else:
                 raise NotImplementedError
 
-            download_and_extract(
-                partial(extract,build_command=build_command),
-                data_folder,
-                extract_folder,
-                file,
-                remove_zipped,
-                url,
-                verbose,
-            )
+            if not os.path.isdir(extract_folder):
+                wget_file(url, data_folder, verbose)
+                assert os.system("mkdir %s" % extract_folder) == 0
+                extract(extract_folder, file, build_command)
+                if remove_zipped:
+                    os.remove(file)
 
         else:
             if not os.path.isfile(file):
@@ -178,4 +156,4 @@ def wget_file(url, data_folder, verbose=False):
 if __name__ == "__main__":
     file_name = "/test-other.tar.gz"
     base_url = "http://www.openslr.org/resources/12"
-    download_data(base_url, file_name, "/tmp/test_data", unzip_it=True,verbose=True)
+    download_data(base_url, file_name, "/tmp/test_data", unzip_it=True, verbose=True)
