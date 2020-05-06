@@ -1,11 +1,11 @@
 import random
 from pprint import pprint
 from typing import Iterable, List, Any
+from util.worker_pool import WorkerPool, Task
 
 import numpy as np
 
 from util.util_methods import get_dict_paths, set_val, get_val
-from util.worker_pool import WorkerPool, Task
 import warnings
 
 warnings.filterwarnings("ignore")
