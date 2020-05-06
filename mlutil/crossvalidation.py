@@ -58,42 +58,49 @@ def calc_scores(score_task: Task, scoring_jobs: List[Any], n_jobs):
     return scores
 
 
-def dummy_score_fun(split, model_data):
-    return {
-        model_data: {
-            "dummy-score-%s" % dataset_name: random.random() for dataset_name in split
-        }
-    }
-
-
-def kwargs_builder(param):
-    return {"model_data": "some-model-%s" % param}
-
-
 class ScoreTask(Task):
-    def __init__(self, score_fun, kwargs_builder, builder_kwargs) -> None:
+    def __init__(self, score_fun, build_kwargs_fun, builder_kwargs) -> None:
         super().__init__()
         self.score_fun = score_fun
-        self.kwargs_builder = kwargs_builder
+        self.build_kwargs_fun = build_kwargs_fun
         self.builder_kwargs = builder_kwargs
 
     def __enter__(self):
-        self.kwargs = self.kwargs_builder(**self.builder_kwargs)
+        self.kwargs = self.build_kwargs_fun(**self.builder_kwargs)
         return self
 
     def __call__(self, data):
         return self.score_fun(data, **self.kwargs)
 
 
+"""
+minimal example
+"""
+
+
+def example_build_kwargs_fun(param):
+    return {"model_data": "some-model-%s" % param}
+
+
+def example_score_fun(split, model_data):
+    return {
+        model_data: {
+            "dummy-score": {split_name: random.random() for split_name in split},
+        }
+    }
+
+
 if __name__ == "__main__":
 
-    task = ScoreTask(dummy_score_fun, kwargs_builder, {"param": "testparam"})
+    task = ScoreTask(
+        example_score_fun, example_build_kwargs_fun, {"param": "testparam"}
+    )
     scores = calc_scores(
-        task, scoring_jobs=[("train_%k", "test_%k") for k in range(3)], n_jobs=2
+        task, scoring_jobs=[("train", "test") for k in range(3)], n_jobs=2
     )
     pprint(scores)
 
     mscores = calc_mean_std_scores(
-        task, scoring_jobs=[("train_%k", "test_%k") for k in range(3)], n_jobs=2
+        task, scoring_jobs=[("train", "test") for k in range(3)], n_jobs=2
     )
     pprint(mscores)
