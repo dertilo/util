@@ -78,9 +78,9 @@ class IdWork(NamedTuple):
 
 
 class WorkerPool(object):
-    def __init__(self, processes, task: Task, daemons=True) -> None:
+    def __init__(self, processes:int, task: Task, daemons=True) -> None:
         super().__init__()
-        self.n_jobs = processes
+        self.num_workers = processes
         self.task_queue = multiprocessing.JoinableQueue()
         self.results_queue = multiprocessing.Queue()
         self.task = task
@@ -89,7 +89,7 @@ class WorkerPool(object):
     def __enter__(self):
         consumers = [
             Worker(self.task_queue, self.results_queue, self.task)
-            for i in range(self.n_jobs)
+            for i in range(self.num_workers)
         ]
         for w in consumers:
             w.daemon = self.daemons
@@ -97,19 +97,19 @@ class WorkerPool(object):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        for i in range(self.n_jobs):
+        for i in range(self.num_workers):
             self.task_queue.put(None)
         self.task_queue.join()
         self.results_queue.close()
 
     def process_unordered(self, data_g: Iterable):
         data_iter = iter(data_g)
-        [self.task_queue.put(next(data_iter)) for i in range(self.n_jobs)]
+        [self.task_queue.put(next(data_iter)) for i in range(self.num_workers)]
         for datum in data_iter:
             yield self.results_queue.get()
             self.task_queue.put(datum)
 
-        for i in range(self.n_jobs):
+        for i in range(self.num_workers):
             yield self.results_queue.get()
 
     def process(self, data):
