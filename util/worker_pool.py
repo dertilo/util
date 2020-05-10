@@ -30,17 +30,17 @@ class Task(object):
 
 class GenericTask(Task):
 
-    def __init__(self,params:Dict[str,Any]) -> None:
-        self.params = params # these get pickled and send over multiprocessing.Queue
+    def __init__(self, **kwargs) -> None:
+        self.task_params = kwargs # these get pickled and send over multiprocessing.Queue
         super().__init__()
 
 
     def __enter__(self):
-        self.task_data = self.build_task_data(**self.params)
+        self.task_data = self.build_task_data(**self.task_params)
         return self
 
     def __call__(self, job):
-        return self.process(job, **self.task_data)
+        return self.process(job, self.task_data)
 
     @abstractmethod
     @staticmethod
@@ -53,8 +53,8 @@ class GenericTask(Task):
         raise NotImplementedError
 
     @abstractmethod
-    @staticmethod
-    def process(job, **kwargs):
+    @classmethod
+    def process(cls,job, task_data:Dict[str,Any]):
         '''
         :param job gets send over multiprocessing.Queue
         :return gets send over multiprocessing.Queue
