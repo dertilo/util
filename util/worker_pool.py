@@ -42,8 +42,8 @@ class GenericTask(Task):
     def __call__(self, job):
         return self.process(job, self.task_data)
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def build_task_data(**kwargs)->Dict[str,Any]:
         '''
         only called once in Worker to setup/start the task
@@ -52,8 +52,8 @@ class GenericTask(Task):
         '''
         raise NotImplementedError
 
-    @abstractmethod
     @classmethod
+    @abstractmethod
     def process(cls,job, task_data:Dict[str,Any]):
         '''
         :param job gets send over multiprocessing.Queue
