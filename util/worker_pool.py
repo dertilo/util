@@ -2,7 +2,7 @@ import time
 import traceback
 from abc import abstractmethod
 from pprint import pprint
-from typing import Iterable, NamedTuple, Any
+from typing import Iterable, NamedTuple, Any, Dict
 
 try:
     from torch import multiprocessing
@@ -17,14 +17,6 @@ except ImportError:  #TODO: this is shitty
 
 
 class Task(object):
-    # def __init__(self):
-    # global multiprocessing #TODO: the Task cannot influence the Worker
-    # if multiprocessing is None:
-    #     if i_want_to_use_torch_cuda:
-    #         from torch import multiprocessing
-    #         multiprocessing.set_start_method('spawn', force=True)  # needs to be done to get CUDA working
-    #     else:
-    #         import multiprocessing
 
     def __enter__(self):
         return self
@@ -34,6 +26,39 @@ class Task(object):
 
     @abstractmethod
     def __call__(self, data):
+        raise NotImplementedError
+
+class GenericTask(Task):
+
+    def __init__(self,params:Dict[str,Any]) -> None:
+        self.params = params # these get pickled and send over multiprocessing.Queue
+        super().__init__()
+
+
+    def __enter__(self):
+        self.task_data = self.build_task_data(**self.params)
+        return self
+
+    def __call__(self, job):
+        return self.process(job, **self.task_data)
+
+    @abstractmethod
+    @staticmethod
+    def build_task_data(**kwargs)->Dict[str,Any]:
+        '''
+        only called once in Worker to setup/start the task
+        :param kwargs:
+        :return:
+        '''
+        raise NotImplementedError
+
+    @abstractmethod
+    @staticmethod
+    def process(job, **kwargs):
+        '''
+        :param job gets send over multiprocessing.Queue
+        :return gets send over multiprocessing.Queue
+        '''
         raise NotImplementedError
 
 
