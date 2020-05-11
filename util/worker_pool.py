@@ -43,14 +43,13 @@ class GenericTask(Task):
         return self.process(job, self.task_data)
 
     @staticmethod
-    @abstractmethod
-    def build_task_data(**kwargs)->Dict[str,Any]:
+    def build_task_data(**task_params)->Dict[str, Any]:
         '''
         only called once in Worker to setup/start the task
-        :param kwargs:
+        :param task_params:
         :return:
         '''
-        raise NotImplementedError
+        return {}
 
     @classmethod
     @abstractmethod
