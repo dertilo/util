@@ -5,19 +5,16 @@ from pprint import pprint
 from typing import Iterable, NamedTuple, Any, Dict
 
 try:
-    from torch import multiprocessing
+    from torch import multiprocessing as mp
 
-    multiprocessing.set_start_method(
-        "spawn", force=True
-    )  # needs to be done to get CUDA working
+    mp.set_start_method("spawn", force=True)  # needs to be done to get CUDA working
     # multiprocessing = None
 
-except ImportError:  #TODO: this is shitty
-    import multiprocessing
+except ImportError:  # TODO: this is shitty
+    import multiprocessing as mp
 
 
 class Task(object):
-
     def __enter__(self):
         return self
 
@@ -28,12 +25,13 @@ class Task(object):
     def __call__(self, data):
         raise NotImplementedError
 
+
 class GenericTask(Task):
-
     def __init__(self, **kwargs) -> None:
-        self.task_params = kwargs # these get pickled and send over multiprocessing.Queue
+        self.task_params = (
+            kwargs  # these get pickled and send over multiprocessing.Queue
+        )
         super().__init__()
-
 
     def __enter__(self):
         self.task_data = self.build_task_data(**self.task_params)
@@ -43,27 +41,29 @@ class GenericTask(Task):
         return self.process(job, self.task_data)
 
     @staticmethod
-    def build_task_data(**task_params)->Dict[str, Any]:
-        '''
+    def build_task_data(**task_params) -> Dict[str, Any]:
+        """
         only called once in Worker to setup/start the task
         :param task_params:
         :return:
-        '''
+        """
         return {}
 
     @classmethod
     @abstractmethod
-    def process(cls,job, task_data:Dict[str,Any]):
-        '''
+    def process(cls, job, task_data: Dict[str, Any]):
+        """
         :param job gets send over multiprocessing.Queue
         :return gets send over multiprocessing.Queue
-        '''
+        """
         raise NotImplementedError
 
 
-class Worker(multiprocessing.Process):
-    def __init__(self, task_queue, result_queue, task: Task):
-        multiprocessing.Process.__init__(self)
+class Worker(mp.Process):
+    def __init__(
+        self, task_queue: mp.JoinableQueue, result_queue: mp.Queue, task: Task
+    ):
+        mp.Process.__init__(self)
         self.task_queue = task_queue
         self.result_queue = result_queue
         self.task: Task = task
@@ -102,11 +102,11 @@ class IdWork(NamedTuple):
 
 
 class WorkerPool(object):
-    def __init__(self, processes:int, task: Task, daemons=True) -> None:
+    def __init__(self, processes: int, task: Task, daemons=True) -> None:
         super().__init__()
         self.num_workers = processes
-        self.task_queue = multiprocessing.JoinableQueue()
-        self.results_queue = multiprocessing.Queue()
+        self.task_queue = mp.JoinableQueue()
+        self.results_queue = mp.Queue()
         self.task = task
         self.daemons = daemons
 
@@ -146,7 +146,7 @@ class WorkerPool(object):
 #######################################################################################################
 def funfun(x):
     # time.sleep(0.5)
-    s = "non-daemon-process: %s: %s" % (str(multiprocessing.current_process()), x)
+    s = "non-daemon-process: %s: %s" % (str(mp.current_process()), x)
     return s
 
 
@@ -156,13 +156,13 @@ class MinimalTask(Task):
         self.params_that_where_pickled = params_that_where_pickled
 
     def __enter__(self):
-        self.variable_that_is_never_pickled = str(multiprocessing.current_process())
+        self.variable_that_is_never_pickled = str(mp.current_process())
         return self
 
     def __call__(self, data):
         eid, datum = data
         time.sleep(datum)
-        with multiprocessing.Pool(processes=3) as p:
+        with mp.Pool(processes=3) as p:
             result = list(
                 p.imap_unordered(
                     funfun,
