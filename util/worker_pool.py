@@ -41,17 +41,16 @@ class GenericTask(Task):
         return self.process(job, self.task_data)
 
     @staticmethod
-    def build_task_data(**task_params) -> Dict[str, Any]:
+    def build_task_data(**task_params):
         """
         only called once in Worker to setup/start the task
         :param task_params:
-        :return:
         """
-        return {}
+        pass
 
     @classmethod
     @abstractmethod
-    def process(cls, job, task_data: Dict[str, Any]):
+    def process(cls, job, task_data):
         """
         :param job gets send over multiprocessing.Queue
         :return gets send over multiprocessing.Queue
