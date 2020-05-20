@@ -1,7 +1,8 @@
 import hashlib
+import os
 import subprocess
 from time import time
-from typing import Iterable, Generator, List, Dict, Any, TypeVar
+from typing import Iterable, Generator, List, Dict, Any, TypeVar, Callable
 
 import numpy as np
 from scipy.sparse import csr_matrix, vstack
@@ -104,9 +105,13 @@ def consume_batchwise(consume_fun, iterable: Iterable, batch_size=1024):
     for batch in iterable_to_batches(iterable, batch_size):
         consume_fun(batch)
 
-T = TypeVar('T')
 
-def iterable_to_batches(g: Iterable[T], batch_size:int) -> Generator[List[T], None, None]:
+T = TypeVar("T")
+
+
+def iterable_to_batches(
+    g: Iterable[T], batch_size: int
+) -> Generator[List[T], None, None]:
     g = iter(g) if isinstance(g, list) else g
     batch = []
     while True:
@@ -135,7 +140,27 @@ def iterate_and_time(g):
         yield d, time() - start
 
 
+import concurrent.futures as cf
+
+
+def process_with_threadpool(data: List[Dict], process_fun: Callable, max_workers=1):
+    """see: https://docs.python.org/3/library/concurrent.futures.html"""
+    with cf.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_sample = [executor.submit(process_fun, **d) for d in data]
+        for future in cf.as_completed(future_to_sample):
+            yield future.result()
+
+
 if __name__ == "__main__":
-    dim_names = ["a", "b", "c"]
-    x = dicts_to_csr([{"a": 0.1, "c": 0.2}, {"c": 0.2}], dim_names)
-    print(x)
+    start = time()
+
+    def sleep(k):
+        os.system("sleep 1")
+        return k
+
+    data = [{"k": k} for k in range(10)]
+    print(list(process_with_threadpool(data, sleep, 10)))
+    print(
+        "concurrently sleeping %d times in took %0.2f seconds"
+        % (len(data), time() - start)
+    )
