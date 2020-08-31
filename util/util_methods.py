@@ -63,6 +63,14 @@ def dicts_to_csr(dicts: List[Dict], num_rows=None, num_cols=None):
     return csr_matrix((values, (row, col)), shape=shape)
 
 
+def merge_dicts(dicts: Iterable):
+
+    result = {}
+    for dictionary in dicts:
+        result.update(dictionary)
+    return result
+
+
 def csr_vectors_to_dicts(vects: List[csr_matrix]):
     csr = vstack(vects, format="csr")
     return csr_to_dicts(csr)
